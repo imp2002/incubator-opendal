@@ -219,6 +219,11 @@ public class Operator extends NativeObject {
         return Objects.requireNonNull(result).thenApplyAsync(Arrays::asList);
     }
 
+    public CompletableFuture<Boolean> isExist(String path) {
+        final long requestid = isExist(nativeHandle, path);
+        return AsyncRegistry.take(requestId);
+    }
+
     @Override
     protected native void disposeInternal(long handle);
 
@@ -255,4 +260,6 @@ public class Operator extends NativeObject {
     private static native long removeAll(long nativeHandle, String path);
 
     private static native long list(long nativeHandle, String path);
+
+    private static native long isExist(long nativeHandle, String path);
 }

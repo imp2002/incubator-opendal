@@ -24,6 +24,7 @@ use jni::objects::JObject;
 use jni::objects::JString;
 use jni::objects::JValue;
 use jni::objects::JValueOwned;
+use jni::sys::{jboolean, JNI_TRUE, JNI_FALSE};
 use jni::sys::jsize;
 use jni::sys::{jlong, jobject};
 use jni::JNIEnv;
@@ -510,6 +511,46 @@ async fn do_list<'local>(op: &mut Operator, path: String) -> Result<JObject<'loc
     }
 
     Ok(jarray.into())
+}
+
+/// # Safety
+///
+/// This function should not be called before the Operator are ready.
+#[no_mangle]
+pub unsafe extern "system" fn Java_org_apache_opendal_Operator_isExist(
+    mut env: JNIEnv,
+    _: JClass,
+    op: *mut Operator,
+    path: JString,
+) -> jlong {
+    intern_is_exist(&mut env, op, path).unwrap_or_else(|e| {
+        e.throw(&mut env);
+        0
+    })
+}
+
+fn intern_is_exist(env: &mut JNIEnv, op: *mut Operator, path: JString) -> Result<jlong> {
+    let op = unsafe { &mut *op };
+    let id = request_id(env)?;
+
+    let path = jstring_to_string(env, &path)?;
+
+    unsafe { get_global_runtime() }.spawn(async move {
+        let result = do_is_exist(op, path).await;
+        complete_future(id, result.map(JValueOwned::Bool))
+    });
+
+    Ok(id)
+}
+
+async fn do_is_exist(op: &mut Operator, path: String) -> Result<jboolean> {
+    match op.is_exist(&path).await {
+        Ok(exists) => {
+            let result = if exists { JNI_TRUE } else { JNI_FALSE };
+            Ok(result)
+        }
+        Err(err) => Err(err.into()),
+    }
 }
 
 /// # Safety

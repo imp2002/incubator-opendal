@@ -102,6 +102,10 @@ public class BlockingOperator extends NativeObject {
         return Arrays.asList(list(nativeHandle, path));
     }
 
+    public boolean isExist(String path) {
+        return isExist(nativeHandle, path);
+    }
+
     @Override
     protected native void disposeInternal(long handle);
 
@@ -124,4 +128,6 @@ public class BlockingOperator extends NativeObject {
     private static native void removeAll(long nativeHandle, String path);
 
     private static native Entry[] list(long nativeHandle, String path);
+
+    private static native boolean isExist(String path);
 }
